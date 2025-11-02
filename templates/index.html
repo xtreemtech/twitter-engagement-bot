@@ -1,100 +1,610 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Levva Bot</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Levva AI Campaign Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
-        .btn { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; }
-        .start { background: #4CAF50; color: white; }
-        .stop { background: #f44336; color: white; }
-        .post { background: #2196F3; color: white; }
-        .engage { background: #9C27B0; color: white; }
-        .logs { background: #333; color: #0f0; padding: 15px; border-radius: 5px; font-family: monospace; height: 200px; overflow-y: auto; margin-top: 20px; }
-        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 20px 0; }
-        .stat-card { background: #e3f2fd; padding: 15px; border-radius: 5px; text-align: center; }
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --background: #0f172a;
+            --surface: #1e293b;
+            --surface-light: #334155;
+            --text: #f8fafc;
+            --text-secondary: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 0;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .btn {
+            padding: 16px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-start { 
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-stop { 
+            background: var(--error);
+            color: white;
+        }
+
+        .btn-post { 
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-engage { 
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            padding: 24px;
+            border-radius: 16px;
+            border-left: 4px solid var(--primary);
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .stat-card h3 {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 8px 0;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-running {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .status-stopped {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+        }
+
+        .indicator-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-running .indicator-dot {
+            background: var(--success);
+        }
+
+        .status-stopped .indicator-dot {
+            background: var(--error);
+            animation: none;
+        }
+
+        .logs-panel {
+            background: var(--surface);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .logs-header {
+            padding: 20px 24px;
+            background: var(--surface-light);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+
+        .logs-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .logs-container {
+            height: 300px;
+            overflow-y: auto;
+            padding: 20px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+        }
+
+        .log-entry {
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            border-left: 3px solid var(--primary);
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            min-width: 300px;
+            background: var(--surface);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            border-left: 4px solid var(--primary);
+            animation: slideInRight 0.3s ease;
+            transform: translateX(0);
+        }
+
+        .notification-success {
+            border-left-color: var(--success);
+        }
+
+        .notification-error {
+            border-left-color: var(--error);
+        }
+
+        .notification-content {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: between;
+            gap: 12px;
+        }
+
+        .notification-message {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+
+        .notification-close:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from { 
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to { 
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                padding: 16px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🚀 Levva Campaign Bot</h1>
-        <p>Simple Dashboard - Running on Railway</p>
-        
-        <div class="controls">
-            <button class="btn start" onclick="startBot()">Start Auto</button>
-            <button class="btn stop" onclick="stopBot()">Stop Auto</button>
-            <button class="btn post" onclick="manualPost()">Post Now</button>
-            <button class="btn engage" onclick="manualEngage()">Engage Now</button>
+    <div class="dashboard">
+        <div class="header">
+            <h1><i class="fas fa-robot"></i> Levva AI Campaign Manager</h1>
+            <p>Professional Twitter Automation Dashboard</p>
         </div>
 
-        <div class="stats">
+        <div class="controls-grid">
+            <button class="btn btn-start" id="startBot">
+                <i class="fas fa-play"></i> Start Automation
+            </button>
+            <button class="btn btn-stop" id="stopBot" disabled>
+                <i class="fas fa-stop"></i> Stop Automation
+            </button>
+            <button class="btn btn-post" id="manualPost">
+                <i class="fas fa-feather"></i> Create Post
+            </button>
+            <button class="btn btn-engage" id="manualEngage">
+                <i class="fas fa-heart"></i> Engage Community
+            </button>
+        </div>
+
+        <div class="stats-grid">
             <div class="stat-card">
-                <h3>Status</h3>
-                <div id="status">Stopped</div>
+                <h3>Bot Status</h3>
+                <div class="status-indicator status-stopped" id="status">
+                    <span class="indicator-dot"></span>
+                    Stopped
+                </div>
             </div>
             <div class="stat-card">
                 <h3>Last Post</h3>
-                <div id="lastPost">Never</div>
+                <div class="stat-value" id="lastPost">Never</div>
+                <div class="stat-label">UTC Time</div>
             </div>
             <div class="stat-card">
                 <h3>Posts Today</h3>
-                <div id="postsToday">0</div>
+                <div class="stat-value" id="postsToday">0</div>
+                <div class="stat-label">Total Posts</div>
+            </div>
+            <div class="stat-card">
+                <h3>Engagements</h3>
+                <div class="stat-value" id="engagementsToday">0</div>
+                <div class="stat-label">Today's Interactions</div>
             </div>
         </div>
 
-        <div class="logs" id="logs">
-            [System] Bot ready. Click Start to begin.
+        <div class="logs-panel">
+            <div class="logs-header">
+                <h3><i class="fas fa-terminal"></i> Activity Logs</h3>
+                <span class="logs-count" id="logsCount">0 entries</span>
+            </div>
+            <div class="logs-container" id="logContainer">
+                <div class="log-entry">[System] Dashboard initialized and ready</div>
+            </div>
         </div>
     </div>
 
     <script>
-        async function startBot() {
-            const response = await fetch('/api/start', {method: 'POST'});
-            const result = await response.json();
-            alert(result.message);
-            updateStats();
+        class ProfessionalDashboard {
+            constructor() {
+                this.notificationTimeout = null;
+                this.init();
+            }
+
+            init() {
+                this.setupEventListeners();
+                this.updateStats();
+                setInterval(() => this.updateStats(), 3000);
+            }
+
+            setupEventListeners() {
+                document.getElementById('startBot').addEventListener('click', () => this.startBot());
+                document.getElementById('stopBot').addEventListener('click', () => this.stopBot());
+                document.getElementById('manualPost').addEventListener('click', () => this.manualPost());
+                document.getElementById('manualEngage').addEventListener('click', () => this.manualEngage());
+            }
+
+            async startBot() {
+                this.setLoading('startBot', true);
+                try {
+                    const response = await fetch('/api/start', { method: 'POST' });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        this.showNotification('🚀 Automation started! Bot is now active.', 'success');
+                        this.updateBotStatus('running');
+                    } else {
+                        this.showNotification('❌ Failed to start automation: ' + result.message, 'error');
+                    }
+                } catch (error) {
+                    this.showNotification('❌ Network error occurred', 'error');
+                } finally {
+                    this.setLoading('startBot', false);
+                }
+            }
+
+            async stopBot() {
+                this.setLoading('stopBot', true);
+                try {
+                    const response = await fetch('/api/stop', { method: 'POST' });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        this.showNotification('⏹️ Automation stopped successfully.', 'success');
+                        this.updateBotStatus('stopped');
+                    } else {
+                        this.showNotification('❌ Failed to stop automation', 'error');
+                    }
+                } catch (error) {
+                    this.showNotification('❌ Network error occurred', 'error');
+                } finally {
+                    this.setLoading('stopBot', false);
+                }
+            }
+
+            async manualPost() {
+                this.setLoading('manualPost', true);
+                try {
+                    const response = await fetch('/api/post', { method: 'POST' });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        this.showNotification('📝 Content published successfully!', 'success');
+                    this.addLogEntry('Manual post created and published');
+                    this.updateStats();
+                    setTimeout(() => this.updateStats(), 1000);
+                    } else {
+                        this.showNotification('❌ Failed to create post: ' + (result.error || 'Check configuration'), 'error');
+                    }
+                } catch (error) {
+                    this.showNotification('❌ Network error during post creation', 'error');
+                } finally {
+                    this.setLoading('manualPost', false);
+                }
+            }
+
+            async manualEngage() {
+                this.setLoading('manualEngage', true);
+                try {
+                    const response = await fetch('/api/engage', { method: 'POST' });
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        const count = result.engagements || 0;
+                        this.showNotification(`💬 Engaged with ${count} relevant posts`, 'success');
+                        this.addLogEntry(`Community engagement: ${count} interactions`);
+                        this.updateStats();
+                        setTimeout(() => this.updateStats(), 1000);
+                    } else {
+                        this.showNotification('❌ Engagement failed: ' + (result.error || 'No relevant content found'), 'error');
+                    }
+                } catch (error) {
+                    this.showNotification('❌ Network error during engagement', 'error');
+                } finally {
+                    this.setLoading('manualEngage', false);
+                }
+            }
+
+            async updateStats() {
+                try {
+                    const response = await fetch('/api/stats');
+                    const stats = await response.json();
+                    
+                    this.updateDisplay('status', this.formatStatus(stats.status));
+                    this.updateDisplay('lastPost', stats.last_post || 'Never');
+                    this.updateDisplay('postsToday', stats.posts_today || 0);
+                    this.updateDisplay('engagementsToday', stats.engagements_today || 0);
+                    
+                    if (stats.logs && stats.logs.length > 0) {
+                        this.updateLogs(stats.logs);
+                    }
+                    
+                    this.updateBotStatus(stats.status);
+                } catch (error) {
+                    console.error('Failed to update dashboard:', error);
+                }
+            }
+
+            updateBotStatus(status) {
+                const startBtn = document.getElementById('startBot');
+                const stopBtn = document.getElementById('stopBot');
+                
+                if (startBtn && stopBtn) {
+                    startBtn.disabled = status === 'running';
+                    stopBtn.disabled = status !== 'running';
+                }
+            }
+
+            formatStatus(status) {
+                const statusMap = {
+                    'running': `<span class="status-indicator status-running"><span class="indicator-dot"></span>Running</span>`,
+                    'stopped': `<span class="status-indicator status-stopped"><span class="indicator-dot"></span>Stopped</span>`,
+                    'error': `<span class="status-indicator status-stopped"><span class="indicator-dot"></span>Error</span>`
+                };
+                return statusMap[status] || statusMap['stopped'];
+            }
+
+            updateDisplay(elementId, content) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.innerHTML = content;
+                }
+            }
+
+            updateLogs(logs) {
+                const logContainer = document.getElementById('logContainer');
+                const logsCount = document.getElementById('logsCount');
+                
+                if (logContainer) {
+                    logContainer.innerHTML = logs.map(log => 
+                        `<div class="log-entry">${log}</div>`
+                    ).join('');
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                }
+                
+                if (logsCount) {
+                    logsCount.textContent = `${logs.length} entries`;
+                }
+            }
+
+            addLogEntry(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logContainer = document.getElementById('logContainer');
+                if (logContainer) {
+                    const logEntry = document.createElement('div');
+                    logEntry.className = 'log-entry';
+                    logEntry.textContent = `[${timestamp}] ${message}`;
+                    logContainer.appendChild(logEntry);
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                }
+            }
+
+            showNotification(message, type = 'info') {
+                // Remove existing notification
+                const existingNotification = document.getElementById('notification');
+                if (existingNotification) {
+                    existingNotification.remove();
+                }
+
+                // Clear any existing timeout
+                if (this.notificationTimeout) {
+                    clearTimeout(this.notificationTimeout);
+                }
+
+                // Create notification element
+                const notification = document.createElement('div');
+                notification.id = 'notification';
+                notification.className = `notification notification-${type}`;
+                notification.innerHTML = `
+                    <div class="notification-content">
+                        <span class="notification-message">${message}</span>
+                        <button class="notification-close" onclick="this.parentElement.parentElement.remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+
+                document.body.appendChild(notification);
+
+                // Auto-remove after 5 seconds
+                this.notificationTimeout = setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 5000);
+            }
+
+            setLoading(buttonId, isLoading) {
+                const button = document.getElementById(buttonId);
+                if (button) {
+                    if (isLoading) {
+                        button.disabled = true;
+                        const originalHTML = button.innerHTML;
+                        button.setAttribute('data-original', originalHTML);
+                        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                    } else {
+                        button.disabled = false;
+                        const originalHTML = button.getAttribute('data-original');
+                        if (originalHTML) {
+                            button.innerHTML = originalHTML;
+                        }
+                    }
+                }
+            }
         }
 
-        async function stopBot() {
-            const response = await fetch('/api/stop', {method: 'POST'});
-            const result = await response.json();
-            alert(result.message);
-            updateStats();
-        }
-
-        async function manualPost() {
-            const response = await fetch('/api/post', {method: 'POST'});
-            const result = await response.json();
-            alert(result.success ? 'Post created!' : 'Post failed');
-            updateStats();
-        }
-
-        async function manualEngage() {
-            const response = await fetch('/api/engage', {method: 'POST'});
-            const result = await response.json();
-            alert(result.success ? 'Engagement done!' : 'Engagement failed');
-            updateStats();
-        }
-
-        async function updateStats() {
-            const response = await fetch('/api/stats');
-            const stats = await response.json();
-            
-            document.getElementById('status').textContent = stats.status;
-            document.getElementById('lastPost').textContent = stats.last_post;
-            document.getElementById('postsToday').textContent = stats.posts_today;
-            
-            // Update logs
-            const logsDiv = document.getElementById('logs');
-            logsDiv.innerHTML = stats.logs.join('<br>');
-            logsDiv.scrollTop = logsDiv.scrollHeight;
-        }
-
-        // Update stats every 5 seconds
-        setInterval(updateStats, 5000);
-        updateStats();
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new ProfessionalDashboard();
+        });
     </script>
 </body>
 </html>
