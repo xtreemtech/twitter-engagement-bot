@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="header">
+        <h1>🚀 Levva Campaign Bot</h1>
+        <p>AI-Powered Twitter Engagement Dashboard</p>
+    </div>
+    
+    <div class="controls">
+        <button class="btn btn-start" id="startBot">▶️ Start Bot</button>
+        <button class="btn btn-stop" id="stopBot" disabled>⏹️ Stop Bot</button>
+        <button class="btn btn-post" id="manualPost">📝 Post Now</button>
+        <button class="btn btn-engage" id="manualEngage">💬 Engage Now</button>
+    </div>
+    
+    <div class="stats">
+        <div class="stat-card">
+            <h3>Bot Status</h3>
+            <div class="stat-value" id="status">
+                <span class="status-indicator status-stopped"></span> Stopped
+            </div>
+        </div>
+        <div class="stat-card">
+            <h3>Last Post</h3>
+            <div class="stat-value" id="lastPost">Never</div>
+        </div>
+        <div class="stat-card">
+            <h3>Posts Today</h3>
+            <div class="stat-value" id="postsToday">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Engagements Today</h3>
+            <div class="stat-value" id="engagementsToday">0</div>
+        </div>
+    </div>
+    
+    <div class="logs">
+        <h3>📊 Activity Logs</h3>
+        <div class="log-container" id="logContainer">
+            <div class="log-entry">[System] Dashboard loaded. Bot is ready.</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
