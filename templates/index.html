@@ -1,45 +1,100 @@
-{% extends "base.html" %}
-
-{% block content %}
-<div class="dashboard">
-    <div class="header">
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Levva Bot</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
+        .btn { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; }
+        .start { background: #4CAF50; color: white; }
+        .stop { background: #f44336; color: white; }
+        .post { background: #2196F3; color: white; }
+        .engage { background: #9C27B0; color: white; }
+        .logs { background: #333; color: #0f0; padding: 15px; border-radius: 5px; font-family: monospace; height: 200px; overflow-y: auto; margin-top: 20px; }
+        .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 20px 0; }
+        .stat-card { background: #e3f2fd; padding: 15px; border-radius: 5px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
         <h1>🚀 Levva Campaign Bot</h1>
-        <p>AI-Powered Twitter Engagement Dashboard</p>
-    </div>
-    
-    <div class="controls">
-        <button class="btn btn-start" id="startBot">▶️ Start Bot</button>
-        <button class="btn btn-stop" id="stopBot" disabled>⏹️ Stop Bot</button>
-        <button class="btn btn-post" id="manualPost">📝 Post Now</button>
-        <button class="btn btn-engage" id="manualEngage">💬 Engage Now</button>
-    </div>
-    
-    <div class="stats">
-        <div class="stat-card">
-            <h3>Bot Status</h3>
-            <div class="stat-value" id="status">
-                <span class="status-indicator status-stopped"></span> Stopped
+        <p>Simple Dashboard - Running on Railway</p>
+        
+        <div class="controls">
+            <button class="btn start" onclick="startBot()">Start Auto</button>
+            <button class="btn stop" onclick="stopBot()">Stop Auto</button>
+            <button class="btn post" onclick="manualPost()">Post Now</button>
+            <button class="btn engage" onclick="manualEngage()">Engage Now</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Status</h3>
+                <div id="status">Stopped</div>
+            </div>
+            <div class="stat-card">
+                <h3>Last Post</h3>
+                <div id="lastPost">Never</div>
+            </div>
+            <div class="stat-card">
+                <h3>Posts Today</h3>
+                <div id="postsToday">0</div>
             </div>
         </div>
-        <div class="stat-card">
-            <h3>Last Post</h3>
-            <div class="stat-value" id="lastPost">Never</div>
-        </div>
-        <div class="stat-card">
-            <h3>Posts Today</h3>
-            <div class="stat-value" id="postsToday">0</div>
-        </div>
-        <div class="stat-card">
-            <h3>Engagements Today</h3>
-            <div class="stat-value" id="engagementsToday">0</div>
+
+        <div class="logs" id="logs">
+            [System] Bot ready. Click Start to begin.
         </div>
     </div>
-    
-    <div class="logs">
-        <h3>📊 Activity Logs</h3>
-        <div class="log-container" id="logContainer">
-            <div class="log-entry">[System] Dashboard loaded. Bot is ready.</div>
-        </div>
-    </div>
-</div>
-{% endblock %}
+
+    <script>
+        async function startBot() {
+            const response = await fetch('/api/start', {method: 'POST'});
+            const result = await response.json();
+            alert(result.message);
+            updateStats();
+        }
+
+        async function stopBot() {
+            const response = await fetch('/api/stop', {method: 'POST'});
+            const result = await response.json();
+            alert(result.message);
+            updateStats();
+        }
+
+        async function manualPost() {
+            const response = await fetch('/api/post', {method: 'POST'});
+            const result = await response.json();
+            alert(result.success ? 'Post created!' : 'Post failed');
+            updateStats();
+        }
+
+        async function manualEngage() {
+            const response = await fetch('/api/engage', {method: 'POST'});
+            const result = await response.json();
+            alert(result.success ? 'Engagement done!' : 'Engagement failed');
+            updateStats();
+        }
+
+        async function updateStats() {
+            const response = await fetch('/api/stats');
+            const stats = await response.json();
+            
+            document.getElementById('status').textContent = stats.status;
+            document.getElementById('lastPost').textContent = stats.last_post;
+            document.getElementById('postsToday').textContent = stats.posts_today;
+            
+            // Update logs
+            const logsDiv = document.getElementById('logs');
+            logsDiv.innerHTML = stats.logs.join('<br>');
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        // Update stats every 5 seconds
+        setInterval(updateStats, 5000);
+        updateStats();
+    </script>
+</body>
+</html>
