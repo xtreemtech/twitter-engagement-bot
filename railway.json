@@ -1,14 +1,4 @@
-{
-  "build": {
-    "builder": "NIXPACKS"
-  },
-  "deploy": {
-    "startCommand": "python wsgi.py",
-    "restartPolicyType": "ON_FAILURE",
-    "healthcheckPath": "/",
-    "healthcheckTimeout": 300
-  }
-}
+
 
 {
   "$schema": "https://railway.app/railway.schema.json",
