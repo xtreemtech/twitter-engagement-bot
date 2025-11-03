@@ -9,7 +9,6 @@ import os
 import random
 import requests
 from io import BytesIO
-import base64
 
 # Load environment variables
 load_dotenv()
@@ -17,7 +16,7 @@ load_dotenv()
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key')
 
-class FullFunctionalBot:
+class LevvaCampaignBot:
     def __init__(self):
         self.client = None
         self.running = False
@@ -36,14 +35,19 @@ class FullFunctionalBot:
         self.uploaded_images = self.load_uploaded_images()
         self.used_images = []
         
-        self.keywords = ["DeFi", "yield farming", "APY", "crypto earnings", "Pendle", "AAVE", "Lido", "smart contracts"]
+        # Engagement keywords
+        self.keywords = [
+            "DeFi", "yield farming", "APY", "crypto earnings", 
+            "Pendle", "AAVE", "Lido", "smart contracts",
+            "Ethereum staking", "passive income", "crypto investing"
+        ]
 
     def load_uploaded_images(self):
-        """Load uploaded images from a storage file"""
+        """Load uploaded images from storage file"""
         try:
             with open('uploaded_images.txt', 'r', encoding='utf-8') as f:
                 images = [line.strip() for line in f if line.strip() and not line.startswith('#')]
-                self.add_log(f"🖼️ Loaded {len(images)} uploaded images")
+                self.add_log(f"🖼️ Loaded {len(images)} campaign images")
                 return images
         except FileNotFoundError:
             self.add_log("📝 No uploaded images found - using default campaign images")
@@ -62,25 +66,25 @@ class FullFunctionalBot:
             with open('uploaded_images.txt', 'w', encoding='utf-8') as f:
                 for image_url in self.uploaded_images:
                     f.write(image_url + '\n')
-            self.add_log("💾 Uploaded images saved to file")
+            self.add_log("💾 Campaign images saved")
         except Exception as e:
             self.add_log(f"❌ Failed to save images: {e}")
 
     def add_uploaded_image(self, image_url):
-        """Add a new uploaded image"""
+        """Add a new uploaded image to campaign"""
         if image_url not in self.uploaded_images:
             self.uploaded_images.append(image_url)
             self.save_uploaded_images()
-            self.add_log(f"✅ New image added to campaign: {image_url}")
+            self.add_log(f"✅ New campaign image added")
             return True
         return False
 
     def get_next_image(self):
-        """Get the next image to use (round-robin)"""
+        """Get the next image to use (round-robin rotation)"""
         if not self.uploaded_images:
             return None
         
-        # If we've used all images, reset
+        # Reset if we've used all images
         if not self.used_images or len(self.used_images) >= len(self.uploaded_images):
             self.used_images = []
         
@@ -101,7 +105,7 @@ class FullFunctionalBot:
             with open('content_pool.txt', 'r', encoding='utf-8') as f:
                 content = [line.strip().replace('{utm}', self.utm_link) 
                           for line in f if line.strip() and not line.startswith('#')]
-                self.add_log(f"📁 Loaded {len(content)} content pieces from file")
+                self.add_log(f"📁 Loaded {len(content)} content variations")
                 return content
         except FileNotFoundError:
             self.add_log("📝 Using default content pool")
@@ -112,10 +116,11 @@ class FullFunctionalBot:
         return [
             f"🤖 Tell AI: 'I want safe yield.' Levva's Smart Vaults make DeFi effortless! 5-25% APY 🚀 {self.utm_link}",
             f"📊 Just deposited into Levva's AI vaults! No more DeFi complexity - just automated earnings {self.utm_link}",
+            f"🛡️ Tired of managing 10+ DeFi dashboards? Levva handles everything automatically! {self.utm_link}",
         ]
 
     def initialize_twitter(self):
-        """Initialize Twitter client"""
+        """Initialize Twitter client with error handling"""
         try:
             self.client = tweepy.Client(
                 bearer_token=os.getenv('TWITTER_BEARER_TOKEN'),
@@ -136,21 +141,27 @@ class FullFunctionalBot:
     def download_image(self, url):
         """Download and prepare image for Twitter"""
         try:
-            response = requests.get(url, timeout=10)
+            response = requests.get(url, timeout=15)
             response.raise_for_status()
+            
+            # Check file size (Twitter limit is 5MB for images)
+            if int(response.headers.get('content-length', 0)) > 5 * 1024 * 1024:
+                self.add_log("❌ Image too large (max 5MB)")
+                return None
+                
             return BytesIO(response.content)
         except Exception as e:
             self.add_log(f"❌ Image download failed: {e}")
             return None
 
     def add_log(self, message):
-        """Add log message"""
+        """Add log message with timestamp"""
         timestamp = datetime.now().strftime('%H:%M:%S')
         log_entry = f"[{timestamp}] {message}"
         self.logs.append(log_entry)
-        # Keep only last 20 logs
-        if len(self.logs) > 20:
-            self.logs = self.logs[-20:]
+        # Keep only last 25 logs
+        if len(self.logs) > 25:
+            self.logs = self.logs[-25:]
         print(log_entry)
 
     def get_fresh_content(self):
@@ -165,14 +176,14 @@ class FullFunctionalBot:
         content = random.choice(available)
         self.used_content.append(content)
         
-        # Keep only last 10 used
-        if len(self.used_content) > 10:
-            self.used_content = self.used_content[-10:]
+        # Keep only last 15 used to prevent memory issues
+        if len(self.used_content) > 15:
+            self.used_content = self.used_content[-15:]
             
         return content
 
-    def post_content(self, use_image=False):
-        """Post content to Twitter with optional image"""
+    def post_content(self, use_image=True):
+        """Post content to Twitter with campaign image"""
         if not self.client:
             if not self.initialize_twitter():
                 return {"success": False, "error": "Twitter not connected"}
@@ -182,19 +193,25 @@ class FullFunctionalBot:
             media_ids = []
             image_used = None
             
+            # Always try to use images if available and requested
             if use_image and self.uploaded_images:
                 image_used = self.get_next_image()
-                self.add_log(f"🖼️ Using campaign image: {image_used}")
+                self.add_log(f"🖼️ Using campaign image")
                 image_file = self.download_image(image_used)
                 if image_file:
                     try:
                         # Upload media to Twitter
-                        media = self.client.media_upload(filename="campaign_image.jpg", file=image_file)
+                        media = self.client.media_upload(
+                            filename="levva_campaign.jpg", 
+                            file=image_file
+                        )
                         media_ids.append(media.media_id)
-                        self.add_log("✅ Campaign image uploaded successfully")
+                        self.add_log("✅ Image uploaded to Twitter")
                     except Exception as e:
                         self.add_log(f"❌ Image upload failed: {e}")
                         image_used = None
+                else:
+                    self.add_log("⚠️ Could not download image, posting text only")
             
             # Create tweet with or without media
             if media_ids:
@@ -202,12 +219,13 @@ class FullFunctionalBot:
             else:
                 response = self.client.create_tweet(text=content)
             
+            # Update statistics
             self.last_post_time = datetime.now().strftime('%H:%M:%S')
             self.posts_today += 1
             
-            log_message = "✅ Post created successfully"
+            log_message = "✅ Post published successfully"
             if image_used:
-                log_message += f" with campaign image"
+                log_message += " with campaign image"
             self.add_log(log_message)
             
             return {
@@ -219,44 +237,66 @@ class FullFunctionalBot:
             }
             
         except Exception as e:
-            self.add_log(f"❌ Post failed: {e}")
-            return {"success": False, "error": str(e)}
+            error_msg = str(e)
+            self.add_log(f"❌ Post failed: {error_msg}")
+            return {"success": False, "error": error_msg}
 
     def engage_with_community(self):
-        """Engage with relevant tweets"""
+        """Engage with relevant tweets (FIXED for Twitter API v2)"""
         if not self.client:
             if not self.initialize_twitter():
                 return {"success": False, "error": "Twitter not connected"}
         
         try:
             keyword = random.choice(self.keywords)
-            self.add_log(f"🔍 Engaging with tweets about: {keyword}")
+            self.add_log(f"🔍 Searching for tweets about: {keyword}")
             
+            # FIXED: Twitter API v2 requires max_results between 10-100
             tweets = self.client.search_recent_tweets(
-                f"{keyword} -is:retweet -from:levvafi",
-                max_results=5,
-                tweet_fields=['public_metrics']
+                query=f"{keyword} -is:retweet -is:reply",  # Exclude retweets and replies
+                max_results=10,  # Must be between 10-100
+                tweet_fields=['public_metrics', 'author_id', 'context_annotations']
             )
             
             engagements = 0
             if tweets.data:
-                for tweet in tweets.data[:2]:  # Limit to 2 engagements
-                    if tweet.public_metrics['like_count'] >= 1:
-                        try:
-                            self.client.like(tweet.id)
-                            engagements += 1
-                            self.engagements_today += 1
-                            self.add_log(f"   👍 Liked tweet about {keyword}")
-                            time.sleep(random.randint(20, 40))  # Be human-like
-                        except Exception as e:
-                            self.add_log(f"   ❌ Failed to like tweet: {e}")
+                # Filter for quality tweets (some engagement, not spam)
+                quality_tweets = []
+                for tweet in tweets.data:
+                    metrics = tweet.public_metrics
+                    # Only engage with tweets that have some organic activity
+                    if (metrics['like_count'] >= 2 or 
+                        metrics['reply_count'] >= 1 or 
+                        metrics['retweet_count'] >= 1):
+                        quality_tweets.append(tweet)
                 
-            self.add_log(f"💬 Engagement complete: {engagements} interactions")
-            return {"success": True, "engagements": engagements}
+                self.add_log(f"   Found {len(quality_tweets)} quality tweets")
+                
+                # Engage with up to 3 quality tweets
+                for tweet in quality_tweets[:3]:
+                    try:
+                        self.client.like(tweet.id)
+                        engagements += 1
+                        self.engagements_today += 1
+                        self.add_log(f"   👍 Liked quality tweet about {keyword}")
+                        
+                        # Random delay between engagements (be human-like)
+                        delay = random.randint(25, 45)
+                        time.sleep(delay)
+                        
+                    except Exception as e:
+                        self.add_log(f"   ❌ Failed to like tweet: {e}")
+                        # Continue with next tweet instead of breaking
+                        continue
+                
+            result_msg = f"💬 Engagement complete: {engagements} interactions"
+            self.add_log(result_msg)
+            return {"success": True, "engagements": engagements, "message": result_msg}
             
         except Exception as e:
-            self.add_log(f"❌ Engagement failed: {e}")
-            return {"success": False, "error": str(e)}
+            error_msg = f"Engagement failed: {str(e)}"
+            self.add_log(f"❌ {error_msg}")
+            return {"success": False, "error": error_msg}
 
     def start_auto_mode(self):
         """Start automated posting and engagement"""
@@ -266,13 +306,16 @@ class FullFunctionalBot:
         
         self.running = True
         self.setup_schedule()
-        self.add_log("🚀 AUTO MODE STARTED - Bot will post and engage automatically")
+        self.add_log("🚀 AUTOMATION STARTED - Campaign bot is now active")
         
         # Start schedule in background thread
         def scheduler():
             while self.running:
-                schedule.run_pending()
-                time.sleep(60)
+                try:
+                    schedule.run_pending()
+                except Exception as e:
+                    self.add_log(f"❌ Scheduler error: {e}")
+                time.sleep(60)  # Check every minute
         
         self.thread = threading.Thread(target=scheduler)
         self.thread.daemon = True
@@ -280,29 +323,41 @@ class FullFunctionalBot:
         return True
 
     def setup_schedule(self):
-        """Setup automated schedule"""
+        """Setup automated campaign schedule"""
         schedule.clear()
         
-        # Content posting (3x daily - always with campaign images when available)
-        schedule.every().day.at("09:00").do(lambda: self.post_content(use_image=True))
-        schedule.every().day.at("14:00").do(lambda: self.post_content(use_image=True))
-        schedule.every().day.at("19:00").do(lambda: self.post_content(use_image=True))
+        # Content posting (3x daily - always with campaign images)
+        schedule.every().day.at("09:00").do(lambda: self.scheduled_post())
+        schedule.every().day.at("14:00").do(lambda: self.scheduled_post())
+        schedule.every().day.at("19:00").do(lambda: self.scheduled_post())
         
-        # Community engagement (3x daily)
-        schedule.every().day.at("10:30").do(lambda: self.engage_with_community())
-        schedule.every().day.at("16:00").do(lambda: self.engage_with_community())
-        schedule.every().day.at("21:00").do(lambda: self.engage_with_community())
+        # Community engagement (3x daily - conservative approach)
+        schedule.every().day.at("10:30").do(lambda: self.scheduled_engage())
+        schedule.every().day.at("16:00").do(lambda: self.scheduled_engage())
+        schedule.every().day.at("21:00").do(lambda: self.scheduled_engage())
         
         self.add_log("📅 Schedule: Posts at 9:00, 14:00, 19:00 | Engagement at 10:30, 16:00, 21:00")
+
+    def scheduled_post(self):
+        """Scheduled post with error handling"""
+        if self.running:
+            self.add_log("🕒 Scheduled post triggered")
+            self.post_content(use_image=True)
+
+    def scheduled_engage(self):
+        """Scheduled engagement with error handling"""
+        if self.running:
+            self.add_log("🕒 Scheduled engagement triggered")
+            self.engage_with_community()
 
     def stop_auto_mode(self):
         """Stop automated mode"""
         self.running = False
         schedule.clear()
-        self.add_log("⏹️ AUTO MODE STOPPED")
+        self.add_log("⏹️ AUTOMATION STOPPED - Campaign bot is now inactive")
 
     def get_stats(self):
-        """Get bot statistics"""
+        """Get comprehensive bot statistics"""
         return {
             'status': 'running' if self.running else 'stopped',
             'last_post': self.last_post_time,
@@ -310,67 +365,90 @@ class FullFunctionalBot:
             'engagements_today': self.engagements_today,
             'content_pool_size': len(self.content_templates),
             'image_pool_size': len(self.uploaded_images),
-            'logs': self.logs[-10:]  # Last 10 logs
+            'logs': self.logs[-15:]  # Last 15 logs
         }
 
     def upload_image_url(self, image_url):
         """Add a new image URL to the campaign"""
+        # Validate URL
+        if not image_url.startswith(('http://', 'https://')):
+            return {
+                'success': False, 
+                'error': 'Invalid URL format. Must start with http:// or https://'
+            }
+        
         success = self.add_uploaded_image(image_url)
         return {
             'success': success,
-            'message': 'Image added to campaign' if success else 'Image already exists',
+            'message': 'Campaign image added successfully' if success else 'Image already in campaign',
             'total_images': len(self.uploaded_images)
         }
 
 # Global bot instance
-bot = FullFunctionalBot()
+bot = LevvaCampaignBot()
 
+# API Routes
 @app.route('/')
 def home():
     return render_template('index.html')
 
 @app.route('/api/start', methods=['POST'])
 def start_bot():
+    """Start the automated campaign bot"""
     if bot.start_auto_mode():
-        return jsonify({'success': True, 'message': 'Auto mode started'})
-    return jsonify({'success': False, 'message': 'Failed to start'})
+        return jsonify({
+            'success': True, 
+            'message': 'Campaign automation started successfully'
+        })
+    return jsonify({
+        'success': False, 
+        'message': 'Failed to start automation - check Twitter configuration'
+    })
 
 @app.route('/api/stop', methods=['POST'])
 def stop_bot():
+    """Stop the automated campaign bot"""
     bot.stop_auto_mode()
-    return jsonify({'success': True, 'message': 'Auto mode stopped'})
+    return jsonify({
+        'success': True, 
+        'message': 'Campaign automation stopped'
+    })
 
 @app.route('/api/post', methods=['POST'])
 def manual_post():
-    result = bot.post_content(use_image=True)  # Always use images for manual posts
+    """Create a manual post with campaign image"""
+    result = bot.post_content(use_image=True)
     return jsonify(result)
 
 @app.route('/api/engage', methods=['POST'])
 def manual_engage():
+    """Manual community engagement"""
     result = bot.engage_with_community()
     return jsonify(result)
 
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
+    """Get current bot statistics and logs"""
     return jsonify(bot.get_stats())
 
 @app.route('/api/upload-image', methods=['POST'])
 def upload_image():
+    """Upload a new campaign image"""
     data = request.get_json()
     image_url = data.get('image_url', '').strip()
     
     if not image_url:
-        return jsonify({'success': False, 'error': 'No image URL provided'})
-    
-    # Validate URL format
-    if not image_url.startswith(('http://', 'https://')):
-        return jsonify({'success': False, 'error': 'Invalid URL format'})
+        return jsonify({
+            'success': False, 
+            'error': 'No image URL provided'
+        })
     
     result = bot.upload_image_url(image_url)
     return jsonify(result)
 
 @app.route('/api/campaign-images', methods=['GET'])
 def get_campaign_images():
+    """Get all uploaded campaign images"""
     return jsonify({
         'success': True,
         'images': bot.uploaded_images,
@@ -379,7 +457,25 @@ def get_campaign_images():
 
 @app.route('/health')
 def health():
-    return jsonify({"status": "healthy", "message": "Campaign bot with image management running"})
+    """Health check endpoint for deployment"""
+    return jsonify({
+        "status": "healthy", 
+        "message": "Levva Campaign Bot is running",
+        "timestamp": datetime.now().isoformat()
+    })
+
+@app.route('/api/test-twitter', methods=['GET'])
+def test_twitter():
+    """Test Twitter API connection"""
+    if bot.initialize_twitter():
+        return jsonify({
+            'success': True,
+            'message': 'Twitter API connection successful'
+        })
+    return jsonify({
+        'success': False,
+        'message': 'Twitter API connection failed'
+    })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
