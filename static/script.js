@@ -209,7 +209,10 @@ class BotDashboard {
     }
 }
 
+
+
 // Initialize dashboard when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     new BotDashboard();
 });
+

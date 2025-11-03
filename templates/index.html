@@ -112,6 +112,16 @@
             color: white;
         }
 
+        .btn-upload {
+            background: var(--image);
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
         .btn:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0,0,0,0.3);
@@ -192,6 +202,114 @@
             animation: none;
         }
 
+        /* Image Management Styles */
+        .image-panel {
+            background: var(--surface);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 32px;
+        }
+
+        .panel-header {
+            padding: 20px 24px;
+            background: var(--surface-light);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-header h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .image-upload-section {
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .upload-form {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .url-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        .url-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .upload-hint {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .images-grid {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            min-height: 120px;
+        }
+
+        .image-card {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .image-preview {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .image-remove {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .no-images {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .no-images i {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        /* Logs Panel */
         .logs-panel {
             background: var(--surface);
             border-radius: 16px;
@@ -234,6 +352,7 @@
             border-left-color: var(--image);
         }
 
+        /* Notifications */
         .notification {
             position: fixed;
             top: 20px;
@@ -287,6 +406,7 @@
             background: rgba(255,255,255,0.1);
         }
 
+        /* Animations */
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
@@ -314,6 +434,7 @@
             }
         }
 
+        /* Responsive */
         @media (max-width: 768px) {
             .dashboard {
                 padding: 16px;
@@ -330,6 +451,14 @@
             .stats-grid {
                 grid-template-columns: 1fr;
             }
+            
+            .upload-form {
+                flex-direction: column;
+            }
+            
+            .images-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
         }
     </style>
 </head>
@@ -337,7 +466,7 @@
     <div class="dashboard">
         <div class="header">
             <h1><i class="fas fa-robot"></i> Levva AI Campaign Manager</h1>
-            <p>Professional Twitter Automation with Image Support</p>
+            <p>Professional Twitter Automation with Image Management</p>
         </div>
 
         <div class="controls-grid">
@@ -349,9 +478,6 @@
             </button>
             <button class="btn btn-post" id="manualPost">
                 <i class="fas fa-feather"></i> Create Post
-            </button>
-            <button class="btn btn-image" id="postWithImage">
-                <i class="fas fa-image"></i> Post with Image
             </button>
             <button class="btn btn-engage" id="manualEngage">
                 <i class="fas fa-heart"></i> Engage Community
@@ -387,6 +513,39 @@
                 <div class="stat-value" id="contentPool">0</div>
                 <div class="stat-label">Available Posts</div>
             </div>
+            <div class="stat-card">
+                <h3>Campaign Images</h3>
+                <div class="stat-value" id="imagePool">0</div>
+                <div class="stat-label">Uploaded Images</div>
+            </div>
+        </div>
+
+        <!-- Image Management Panel -->
+        <div class="image-panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-images"></i> Campaign Image Management</h3>
+                <span class="image-count" id="imageCount">0 images</span>
+            </div>
+            
+            <div class="image-upload-section">
+                <div class="upload-form">
+                    <input type="url" id="imageUrlInput" placeholder="Paste image URL (jpg, png, webp)" class="url-input">
+                    <button class="btn btn-upload" id="uploadImageBtn">
+                        <i class="fas fa-upload"></i> Add to Campaign
+                    </button>
+                </div>
+                <div class="upload-hint">
+                    <small>Supported: JPG, PNG, WebP | Max: 5MB | Host images on Imgur, Cloudinary, etc.</small>
+                </div>
+            </div>
+
+            <div class="images-grid" id="imagesGrid">
+                <div class="no-images" id="noImagesMessage">
+                    <i class="fas fa-image"></i>
+                    <p>No campaign images added yet</p>
+                    <small>Add images above to use in your posts</small>
+                </div>
+            </div>
         </div>
 
         <div class="logs-panel">
@@ -396,8 +555,8 @@
             </div>
             <div class="logs-container" id="logContainer">
                 <div class="log-entry">[System] Dashboard initialized and ready</div>
-                <div class="log-entry">[System] Image support enabled</div>
-                <div class="log-entry">[System] Content pool loaded</div>
+                <div class="log-entry">[System] Image management system loaded</div>
+                <div class="log-entry">[System] Ready to upload campaign images</div>
             </div>
         </div>
     </div>
@@ -412,6 +571,7 @@
             init() {
                 this.setupEventListeners();
                 this.updateStats();
+                this.loadCampaignImages();
                 setInterval(() => this.updateStats(), 3000);
             }
 
@@ -419,8 +579,15 @@
                 document.getElementById('startBot').addEventListener('click', () => this.startBot());
                 document.getElementById('stopBot').addEventListener('click', () => this.stopBot());
                 document.getElementById('manualPost').addEventListener('click', () => this.manualPost());
-                document.getElementById('postWithImage').addEventListener('click', () => this.postWithImage());
                 document.getElementById('manualEngage').addEventListener('click', () => this.manualEngage());
+                document.getElementById('uploadImageBtn').addEventListener('click', () => this.uploadImage());
+                
+                // Enter key for image upload
+                document.getElementById('imageUrlInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.uploadImage();
+                    }
+                });
             }
 
             async startBot() {
@@ -430,7 +597,7 @@
                     const result = await response.json();
                     
                     if (result.success) {
-                        this.showNotification('🚀 Automation started! Bot will post automatically with scheduled images.', 'success');
+                        this.showNotification('🚀 Automation started! Bot will post automatically with campaign images.', 'success');
                         this.updateBotStatus('running');
                     } else {
                         this.showNotification('❌ Failed to start automation: ' + result.message, 'error');
@@ -468,8 +635,12 @@
                     const result = await response.json();
                     
                     if (result.success) {
-                        this.showNotification('📝 Content published successfully!', 'success');
-                        this.addLogEntry('Manual post created', result.with_image);
+                        const message = result.with_image ? 
+                            '📸 Post with campaign image created successfully!' : 
+                            '📝 Post created successfully!';
+                        const type = result.with_image ? 'image' : 'success';
+                        this.showNotification(message, type);
+                        this.addLogEntry('Created post' + (result.with_image ? ' with campaign image' : ''), result.with_image);
                         this.updateStats();
                         setTimeout(() => this.updateStats(), 1000);
                     } else {
@@ -479,31 +650,6 @@
                     this.showNotification('❌ Network error during post creation', 'error');
                 } finally {
                     this.setLoading('manualPost', false);
-                }
-            }
-
-            async postWithImage() {
-                this.setLoading('postWithImage', true);
-                try {
-                    const response = await fetch('/api/post-with-image', { method: 'POST' });
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        const message = result.with_image ? 
-                            '📸 Post with image created successfully!' : 
-                            '📝 Post created successfully!';
-                        const type = result.with_image ? 'image' : 'success';
-                        this.showNotification(message, type);
-                        this.addLogEntry('Created post' + (result.with_image ? ' with image' : ''), result.with_image);
-                        this.updateStats();
-                        setTimeout(() => this.updateStats(), 1000);
-                    } else {
-                        this.showNotification('❌ Failed to create post: ' + (result.error || 'Check configuration'), 'error');
-                    }
-                } catch (error) {
-                    this.showNotification('❌ Network error during post creation', 'error');
-                } finally {
-                    this.setLoading('postWithImage', false);
                 }
             }
 
@@ -529,6 +675,91 @@
                 }
             }
 
+            async uploadImage() {
+                const imageUrlInput = document.getElementById('imageUrlInput');
+                const imageUrl = imageUrlInput.value.trim();
+                
+                if (!imageUrl) {
+                    this.showNotification('❌ Please enter an image URL', 'error');
+                    return;
+                }
+
+                // Basic URL validation
+                if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+                    this.showNotification('❌ Please enter a valid URL (http:// or https://)', 'error');
+                    return;
+                }
+
+                this.setLoading('uploadImageBtn', true);
+                try {
+                    const response = await fetch('/api/upload-image', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ image_url: imageUrl })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        this.showNotification('✅ Campaign image added successfully!', 'success');
+                        imageUrlInput.value = '';
+                        this.loadCampaignImages();
+                        this.updateStats();
+                    } else {
+                        this.showNotification('❌ Failed to add image: ' + (result.error || 'Image may already exist'), 'error');
+                    }
+                } catch (error) {
+                    this.showNotification('❌ Network error during upload', 'error');
+                } finally {
+                    this.setLoading('uploadImageBtn', false);
+                }
+            }
+
+            async loadCampaignImages() {
+                try {
+                    const response = await fetch('/api/campaign-images');
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        this.displayCampaignImages(result.images);
+                        document.getElementById('imageCount').textContent = `${result.total} images`;
+                    }
+                } catch (error) {
+                    console.error('Failed to load campaign images:', error);
+                }
+            }
+
+            displayCampaignImages(images) {
+                const imagesGrid = document.getElementById('imagesGrid');
+                const noImagesMessage = document.getElementById('noImagesMessage');
+                
+                if (!images || images.length === 0) {
+                    noImagesMessage.style.display = 'block';
+                    imagesGrid.innerHTML = '';
+                    imagesGrid.appendChild(noImagesMessage);
+                    return;
+                }
+                
+                noImagesMessage.style.display = 'none';
+                
+                imagesGrid.innerHTML = images.map(imageUrl => `
+                    <div class="image-card">
+                        <img src="${imageUrl}" alt="Campaign Image" class="image-preview" 
+                             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDIwMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTIwIiBmaWxsPSIjMzM0MTU1Ii8+CjxwYXRoIGQ9Ik04MCA1MEg2MFY3MEg4MFY1MFoiIGZpbGw9IiM2NDY2RjEiLz4KPHRleHQgeD0iMTAwIiB5PSI2NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk0QTNCOCIgZm9udC1zaXplPSIxMiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIj5JbWFnZTwvdGV4dD4KPC9zdmc+'">
+                        <button class="image-remove" onclick="dashboard.removeImage('${imageUrl}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+
+            removeImage(imageUrl) {
+                // Note: You'll need to implement this in your backend
+                this.showNotification('🔄 Remove feature coming soon - edit uploaded_images.txt file for now', 'info');
+            }
+
             async updateStats() {
                 try {
                     const response = await fetch('/api/stats');
@@ -539,6 +770,7 @@
                     this.updateDisplay('postsToday', stats.posts_today || 0);
                     this.updateDisplay('engagementsToday', stats.engagements_today || 0);
                     this.updateDisplay('contentPool', stats.content_pool_size || 0);
+                    this.updateDisplay('imagePool', stats.image_pool_size || 0);
                     
                     if (stats.logs && stats.logs.length > 0) {
                         this.updateLogs(stats.logs);
@@ -582,7 +814,7 @@
                 
                 if (logContainer) {
                     logContainer.innerHTML = logs.map(log => {
-                        const isImagePost = log.includes('with image');
+                        const isImagePost = log.includes('with campaign image') || log.includes('with image');
                         return `<div class="log-entry ${isImagePost ? 'image-post' : ''}">${log}</div>`;
                     }).join('');
                     logContainer.scrollTop = logContainer.scrollHeight;
@@ -660,8 +892,9 @@
         }
 
         // Initialize dashboard when page loads
+        let dashboard;
         document.addEventListener('DOMContentLoaded', () => {
-            new ProfessionalDashboard();
+            dashboard = new ProfessionalDashboard();
         });
     </script>
 </body>
